@@ -46,6 +46,24 @@ class Eva {
 	}
 
 	// ------------------------------------------------------------
+	// Comparision operations
+	if (exp[0] === '<') {
+	    return this.eval(exp[1], env) < this.eval(exp[2], env);
+	}
+	if (exp[0] === '<=') {
+	    return this.eval(exp[1], env) <= this.eval(exp[2], env);
+	}
+	if (exp[0] === '>') {
+	    return this.eval(exp[1], env) > this.eval(exp[2], env);
+	}
+	if (exp[0] === '>=') {
+	    return this.eval(exp[1], env) >= this.eval(exp[2], env);
+	}
+	if (exp[0] === '==') {
+	    return this.eval(exp[1], env) === this.eval(exp[2], env);
+	}
+
+	// ------------------------------------------------------------
 	// Block: sequence of expressions:
 	if (exp[0] === 'begin') {
 	    const blockEnv = new Environment({}, env);
@@ -60,7 +78,7 @@ class Eva {
 	}
 
 	// ------------------------------------------------------------
-	// Variable access:
+	// Variable update:
 	if (exp[0] === 'set') {
 	    const [_, name, value] = exp;
 	    return env.assign(name, this.eval(value, env));
@@ -72,9 +90,30 @@ class Eva {
 	if (isVariableName(exp)) {
 	    return env.lookup(exp);
 	}
+
+	// ------------------------------------------------------------
+	// If expressions:
+	if (exp[0] === 'if') {
+	    const [_, condition, consequent, alternate] = exp;
+	    if (this.eval(condition, env)) {
+		return this.eval(consequent, env);
+	    }
+	    return this.eval(alternate, env);
+	}
+
+	// ------------------------------------------------------------
+	// While expressions:
+	if (exp[0] === 'while') {
+	    const [_, condition, body] = exp;
+	    let result;
+	    while(this.eval(condition, env)) {
+		result = this.eval(body, env);
+	    }
+	    return result;
+	}
 	
 	
-	throw 'Unimplemented: ${JSON.stringify(exp)}';
+	throw `Unimplemented: ${JSON.stringify(exp)}`;
     }
 
 _evalBlock (block, env) {
