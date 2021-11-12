@@ -1,4 +1,5 @@
 const assert = require('assert');
+const testUtil = require('./test-util');
 
 module.exports = eva => {
     // Blocks:
@@ -48,6 +49,16 @@ module.exports = eva => {
 	    'data'
 	]),
     100);
-} 
+
+    // `` black quotes means the code input (data) js parser will ignore them
+    testUtil.test(eva,
+    `
+    (begin
+      (var x 10)
+      (var y 20)
+      (+ (* x 10) y))
+    `,
+    120);;
+};
 
 
