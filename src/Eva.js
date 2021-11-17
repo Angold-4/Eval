@@ -46,7 +46,7 @@ class Eva {
 	// Variable declaration:
 	if (exp[0] === 'var') {
 	    const [_, name, value] = exp;
-	    return env.define(name, this.eval(value, env));
+	    return env.define(name, this.eval(value, env)); // return the value
 	}
 
 	// ------------------------------------------------------------
@@ -84,20 +84,81 @@ class Eva {
 	    return result;
 	}
 
+
+	// ------------------------------------------------------------
+	// Function declaration: (def square (x) (* x x))
+	//
+	// Syntactic sugar for : (var square (lambda (x) (* x x)))
+	if (exp[0] === 'def') {
+	    const [_, name, params, body] = exp;
+
+
+	    /*
+	    const fn = {
+		params,
+		body,
+		env,
+	    };
+	    */
+
+	    // return env.define(name, fn); // this.record[name] = fn
+	    // also return fn {params, body, env}
+	    // Closure -> a function which captures its definition environment
+	    
+	    // JIT-transpile to a variable declaration
+	    
+	    const varExp = ['var', name, ['lambda', params, body]];
+	    return this.eval(varExp, env);
+	}
+
+	// ------------------------------------------------------------
+	// Lambda function: (lambda (x) (* x x)) just a function without a name
+	if (exp[0] === 'lambda') {
+	    const [_, params, body] = exp;
+
+	    return {
+		params,
+		body,
+		env,
+	    };
+	}
+	
+
 	// ------------------------------------------------------------
 	// Function calls:
-	
-	if (Array.isArray(exp)) {
-	    const fn = this.eval(exp[0], env);
+	if (Array.isArray(exp)) { // lambda will execute this first
+	    const fn = this.eval(exp[0], env); // return a user-define fn
 
-	    const args = exp.slice(1).map(arg => this.eval(arg, env));
+	    const args = exp.slice(1).map(arg => this.eval(arg, env));  // 2
 
+	    // 1. Native function:
 	    if (typeof fn === 'function') {
 	        return fn(...args);
 	    }
+
+	    // 2. User-defined function:
+	    const activationRecord = {}; // actual storage for the local variables and for the parameters
+
+	    fn.params.forEach((param, index) => { 
+		activationRecord[param] = args[index]; // x = 2
+	    });
+
+	    const activationEnv = new Environment(
+		activationRecord,
+		fn.env,
+	    );
+
+	    return this._evalBody(fn.body, activationEnv); // (x * x)
 	}
 
 	throw `Unimplemented: ${JSON.stringify(exp)}`;
+    }
+
+    _evalBody(body, env) {
+	if (body[0] === 'begin') {
+	    return this._evalBlock(body, env);
+	}
+	return this.eval(body, env); // just return simple expression
     }
 
     _evalBlock (block, env) {
