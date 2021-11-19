@@ -47,15 +47,25 @@ class Eva {
 	// Variable declaration:
 	if (exp[0] === 'var') {
 	    const [_, name, value] = exp;
+
 	    return env.define(name, this.eval(value, env)); // return the value
 	}
 
 	// ------------------------------------------------------------
 	// Variable update:
 	if (exp[0] === 'set') {
-	    const [_, name, value] = exp;
-	    return env.assign(name, this.eval(value, env));
+	    const [_, ref, value] = exp;
+	    // Assignment to a property
+	    if (ref[0] === 'prop') {
+		const [_, instance, propName] = ref;
+		const instanceEnv = this.eval(instance, env);
 
+		return instanceEnv.define(
+		    propName,
+		    this.eval(value, env),
+		);
+	    }
+	    return env.assign(ref, this.eval(value, env));
 	}
 
 	// ------------------------------------------------------------
@@ -160,10 +170,61 @@ class Eva {
 		env,
 	    };
 	}
+
+
+	// ------------------------------------------------------------
+	// Class declaration: (class <Name> <Parent> <Body>)
+	// Class is a named environment which can be instantiated and create objects
+	// From the implementation perspective classes and instances and nothing but 
+	// in other environments
 	
+	if (exp[0] === 'class') {
+	    const [_tag, name, parent, body] = exp;
+
+	    // A class is an environment! -- a storage of methods,
+	    // and shared properties:
+
+	    const parentEnv = this.eval(parent, env) || env; // if parent is nulll, then return env
+
+	    const classEnv = new Environment({}, parentEnv);
+
+	    this._evalBody(body, classEnv); // class is just an environment
+
+	    return env.define(name, classEnv);
+	}
+
+
+	// ------------------------------------------------------------
+	// Class instantiation: (new <Class> <Arguments>... )
+	
+	if (exp[0] === 'new') {
+
+	    const classEnv = this.eval(exp[1], env); // class environment
+	    // An instance of a class is an environment!
+
+	    const instanceEnv = new Environment({}, classEnv);
+
+	    const args = exp.slice(2).map(arg => this.eval(arg, env)); // 10 20
+
+	    this._callUserDefinedFunction(classEnv.lookup('constructor'),
+		[instanceEnv, ...args],);
+
+	    return instanceEnv;
+	}
+	
+	// ------------------------------------------------------------
+	// Property access: (prop <instance> <name>)
+
+	if (exp[0] === 'prop') {
+	    const [_, instance, name] = exp;
+
+	    const instanceEnv = this.eval(instance, env); // class is a Env
+	    return instanceEnv.lookup(name);
+	}
 
 	// ------------------------------------------------------------
 	// Function calls:
+	
 	if (Array.isArray(exp)) { // lambda will execute this first
 	    const fn = this.eval(exp[0], env); // return a user-define fn
 	    // ((lambda (x) (* x x)) 2)
@@ -176,21 +237,25 @@ class Eva {
 	    }
 
 	    // 2. User-defined function:
-	    const activationRecord = {}; // actual storage for the local variables and for the parameters
-
-	    fn.params.forEach((param, index) => { 
-		activationRecord[param] = args[index]; // x = 2
-	    });
-
-	    const activationEnv = new Environment(
-		activationRecord,
-		fn.env,
-	    );
-
-	    return this._evalBody(fn.body, activationEnv); // (x * x)
+	    return this._callUserDefinedFunction(fn, args);
 	}
 
 	throw `Unimplemented: ${JSON.stringify(exp)}`;
+    }
+
+    _callUserDefinedFunction(fn, args) {
+	const activationRecord = {}; // actual storage for the local variables and for the parameters
+
+	fn.params.forEach((param, index) => { 
+	    activationRecord[param] = args[index]; // x = 2
+	});
+
+	const activationEnv = new Environment(
+	    activationRecord,
+	    fn.env,
+	);
+
+	return this._evalBody(fn.body, activationEnv); // (x * x)
     }
 
     _evalBody(body, env) {

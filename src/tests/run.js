@@ -15,6 +15,7 @@ const tests = [
     require('./switch-test'),
     require('./for-test'),
     require('./inc-test'),
+    require('./class-test'),
 ];
 
 // ---------------------------------------------------------------------
