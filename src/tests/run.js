@@ -12,6 +12,9 @@ const tests = [
     require('./built-in-function-test.js'),
     require('./user-defined-function-test'),
     require('./lambda-function-test'),
+    require('./switch-test'),
+    require('./for-test'),
+    require('./inc-test'),
 ];
 
 // ---------------------------------------------------------------------

@@ -11,7 +11,7 @@
 
 const assert = require('assert');
 const Environment = require('./Environment');
-const evaParser = require('./parser/evaParser');
+const Transformer = require('./transform/Transformer');
 
 class Eva {
     /*
@@ -19,6 +19,7 @@ class Eva {
      */
     constructor(global = GlobalEnvironment) {
 	this.global = global;
+	this._transformer = new Transformer();
     }
 
 
@@ -74,25 +75,62 @@ class Eva {
 	}
 
 	// ------------------------------------------------------------
+	// Switch expressions:
+	//
+	// Syntactic sugar for if expression
+	if (exp[0] === 'switch') {
+	    const ifExp = this._transformer.transformSwitchToIf(exp);
+	    return this.eval(ifExp, env);
+	}
+	
+	// ------------------------------------------------------------
 	// While expressions:
 	if (exp[0] === 'while') {
 	    const [_, condition, body] = exp;
 	    let result;
-	    while(this.eval(condition, env)) {
+	    while (this.eval(condition, env)) {
 		result = this.eval(body, env);
 	    }
 	    return result;
 	}
 
+	// ------------------------------------------------------------
+	// For expressions:
+	//
+	// Syntactic sugar for while expression (with init)
+	if (exp[0] === 'for') {
+
+	    const whileExp = this._transformer.transformWhileToFor(exp);
+
+	    return this.eval(whileExp, env);
+	}
+
+	// ------------------------------------------------------------
+	// Inc Dec IncVal DecVal:
+	if (exp[0] === '++') {
+	    const incExp = this._transformer.transformIncToSet(exp);
+	    return this.eval(incExp, env);
+	}
+
+	if (exp[0] === '--') {
+	    const decExp = this._transformer.transformDecToSet(exp);
+	    return this.eval(decExp, env);
+	}
+	if (exp[0] === '+=') {
+	    const incValExp = this._transformer.transformIncValToSet(exp);
+	    return this.eval(incValExp, env);
+	}
+
+	if (exp[0] === '-=') {
+	    const decValExp = this._transformer.transformDecValToSet(exp);
+	    return this.eval(decValExp, env);
+	}
 
 	// ------------------------------------------------------------
 	// Function declaration: (def square (x) (* x x))
 	//
 	// Syntactic sugar for : (var square (lambda (x) (* x x)))
 	if (exp[0] === 'def') {
-	    const [_, name, params, body] = exp;
-
-
 	    /*
 	    const fn = {
 		params,
@@ -106,8 +144,8 @@ class Eva {
 	    // Closure -> a function which captures its definition environment
 	    
 	    // JIT-transpile to a variable declaration
+	    const varExp = this._transformer.transformDefToVarLambda(exp);
 	    
-	    const varExp = ['var', name, ['lambda', params, body]];
 	    return this.eval(varExp, env);
 	}
 
@@ -128,6 +166,7 @@ class Eva {
 	// Function calls:
 	if (Array.isArray(exp)) { // lambda will execute this first
 	    const fn = this.eval(exp[0], env); // return a user-define fn
+	    // ((lambda (x) (* x x)) 2)
 
 	    const args = exp.slice(1).map(arg => this.eval(arg, env));  // 2
 
