@@ -1,4 +1,4 @@
-/********************************************************************/
+/*********************************************************************/
 /*                                                                   */
 /*   The Eva Language Interpreter                                    */
 /*                                                                   */
@@ -9,9 +9,15 @@
 /*                                                                   */
 /*********************************************************************/
 
+
+// Runtime semantics should be preserved
+
 const assert = require('assert');
 const Environment = require('./Environment');
 const Transformer = require('./transform/Transformer');
+const evaParser = require('./parser/evaParser');
+
+const fs = require('fs'); // file system (Node lib)
 
 class Eva {
     /*
@@ -25,8 +31,8 @@ class Eva {
     /*
      * Evaluates global code wrapping into a block
      */
-    evalGlobal(expressions) {
-	return this._evalBlock(['block', expressions], this.global,); // just a _ ('block')
+    evalGlobal(exp) {
+	return this._evalBody(exp, this.global,); // just a _ ('block')
     }
 
     /*
@@ -236,6 +242,38 @@ class Eva {
 	    const instanceEnv = this.eval(instance, env); // class is a Env
 	    return instanceEnv.lookup(name); // value
 	}
+
+	// ------------------------------------------------------------
+	// Property access: (prop <instance> <name>)
+	
+	if (exp[0] === 'module') {
+	    const [_, name, body] = exp;
+
+	    const moduleEnv = new Environment({}, env);
+	    this._evalBody(body, moduleEnv);
+
+	    return env.define(name, moduleEnv);
+	}
+
+	// ------------------------------------------------------------
+	// Module import:
+	
+	if (exp[0] === 'import') {
+	    const [_, name] = exp;
+	    const moduleSrc = fs.readFileSync(
+		`${__dirname}/module/${name}.eva`,
+		'utf8',
+	    );
+
+	    const body = evaParser.parse(`(begin ${moduleSrc})`);
+	    const moduleExp = ['module', name, body];
+
+	    return this.eval(moduleExp, this.global);
+	}
+
+	// TODO:
+	// Implement named imports: (import (abs, square) Math)
+        // Implement module exports: (exports (abs, square))
 
 	// ------------------------------------------------------------
 	// Function calls:

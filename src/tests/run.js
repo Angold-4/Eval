@@ -16,6 +16,8 @@ const tests = [
     require('./for-test'),
     require('./inc-test'),
     require('./class-test'),
+    require('./module-test'),
+    require('./import-test'),
 ];
 
 // ---------------------------------------------------------------------
