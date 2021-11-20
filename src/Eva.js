@@ -22,6 +22,12 @@ class Eva {
 	this._transformer = new Transformer();
     }
 
+    /*
+     * Evaluates global code wrapping into a block
+     */
+    evalGlobal(expressions) {
+	return this._evalBlock(['block', expressions], this.global,); // just a _ ('block')
+    }
 
     /*
      * Evaluates an expression in the given environment
@@ -56,8 +62,10 @@ class Eva {
 	if (exp[0] === 'set') {
 	    const [_, ref, value] = exp;
 	    // Assignment to a property
+	    // instance is also an environment
 	    if (ref[0] === 'prop') {
 		const [_, instance, propName] = ref;
+		// instance is 'this'
 		const instanceEnv = this.eval(instance, env);
 
 		return instanceEnv.define(
@@ -179,20 +187,27 @@ class Eva {
 	// in other environments
 	
 	if (exp[0] === 'class') {
-	    const [_tag, name, parent, body] = exp;
+	    const [_, name, parent, body] = exp;
 
 	    // A class is an environment! -- a storage of methods,
 	    // and shared properties:
 
 	    const parentEnv = this.eval(parent, env) || env; // if parent is nulll, then return env
 
-	    const classEnv = new Environment({}, parentEnv);
+	    const classEnv = new Environment({}, parentEnv); // class is just a environment
 
 	    this._evalBody(body, classEnv); // class is just an environment
 
 	    return env.define(name, classEnv);
 	}
 
+	// ------------------------------------------------------------
+	// Super expressions (super <ClassName>)
+	
+	if (exp[0] === 'super') {
+	    const [_, className] = exp;
+	    return this.eval(className, env).parent;
+	}
 
 	// ------------------------------------------------------------
 	// Class instantiation: (new <Class> <Arguments>... )
@@ -202,12 +217,12 @@ class Eva {
 	    const classEnv = this.eval(exp[1], env); // class environment
 	    // An instance of a class is an environment!
 
-	    const instanceEnv = new Environment({}, classEnv);
+	    const instanceEnv = new Environment({}, classEnv); // this is created at here
 
-	    const args = exp.slice(2).map(arg => this.eval(arg, env)); // 10 20
+	    const args = exp.slice(2).map(arg => this.eval(arg, env)); // 10 20 
 
 	    this._callUserDefinedFunction(classEnv.lookup('constructor'),
-		[instanceEnv, ...args],);
+		[instanceEnv, ...args],); // instanceEnv is 'this' // then assign to this
 
 	    return instanceEnv;
 	}
@@ -216,10 +231,10 @@ class Eva {
 	// Property access: (prop <instance> <name>)
 
 	if (exp[0] === 'prop') {
-	    const [_, instance, name] = exp;
+	    const [_, instance, name] = exp; // instanceEnv = this
 
 	    const instanceEnv = this.eval(instance, env); // class is a Env
-	    return instanceEnv.lookup(name);
+	    return instanceEnv.lookup(name); // value
 	}
 
 	// ------------------------------------------------------------
