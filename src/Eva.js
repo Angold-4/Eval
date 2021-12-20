@@ -12,7 +12,6 @@
 
 // Runtime semantics should be preserved
 
-const assert = require('assert');
 const Environment = require('./Environment');
 const Transformer = require('./transform/Transformer');
 const evaParser = require('./parser/evaParser');
