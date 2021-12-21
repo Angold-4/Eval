@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "src/vm/EvaVM.h"
+#include "src/vm/EvaValue.h"
 #include "src/Logger.h"
 
 /**
@@ -14,7 +15,7 @@ int main(int argc, char const *argv[]) {
     auto result = vm.exec(R"(
     )");
 
-    log(result.number);
+    log(AS_NUMBER(result));
 
     std::cout << "All done!" << std::endl;
 
