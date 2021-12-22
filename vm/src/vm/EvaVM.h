@@ -11,14 +11,19 @@
 
 #include "EvaValue.h"
 #include "../Logger.h"
+#include "../compiler/EvaCompiler.h"
+#include "../parser/EvaParser.h"
+#include "../Logger.h"
 #include "../bytecode/OpCode.h"
+
+using syntax::EvaParser;
 
 #define READ_BYTE() *ip++
 
 /**
  * Gets a constant from the pool
  */
-#define GET_CONST() constants[READ_BYTE()]
+#define GET_CONST() co->constants[READ_BYTE()]
 
 /**
  * Stack top (stack overflow after exceeding)
@@ -42,7 +47,8 @@
 
 class EvaVM {
     public:
-	EvaVM() {}
+	EvaVM() : parser(std::make_unique<EvaParser>()),
+	          compiler(std::make_unique<EvaCompiler>()) {}
 
 
 	/**
@@ -72,16 +78,14 @@ class EvaVM {
 	 */
 	EvaValue exec(const std::string &program) {
 	    // 1. Parse the program
+	    auto ast = parser->parse(program);
 
 	    // 2. Compile program to Eva bytecode
+	    co = compiler->compile(ast);
 
-	    constants.push_back(ALLOC_STRING("Hello"));
-	    constants.push_back(ALLOC_STRING(" World!"));
-
-	    code = {OP_CONST, 0, OP_CONST, 1, OP_ADD, OP_HALT};
 
 	    // Set instruction pointer to the begining
-	    ip = &code[0];
+	    ip = &co->code[0];
 
 	    // Set instruction pointer to the begining
 	    sp = &stack[0];
@@ -147,6 +151,17 @@ class EvaVM {
 	    }
 	}
 
+	/**
+	 * Parser
+	 */
+	std::unique_ptr<EvaParser> parser;
+
+	/**
+	 * Compiler
+	 * Using code object to compile functions
+	 */
+	std::unique_ptr<EvaCompiler> compiler;
+
 
 	/**
 	 * Instruction pointer
@@ -177,6 +192,11 @@ class EvaVM {
 	 * Bytecode.
 	 */
 	std::vector<uint8_t> code;
+
+	/**
+	 * Code object
+	 */
+	CodeObject* co;
 };
 
 #endif // evavm
