@@ -14,7 +14,7 @@ int main(int argc, char const *argv[]) {
     auto result = vm.exec(R"(
     )");
 
-    log(AS_NUMBER(result));
+    log(AS_CPPSTRING(result));
 
     std::cout << "All done!" << std::endl;
 
