@@ -26,6 +26,19 @@
 #define STACK_LIMIT 512
 
 
+/**
+ * Binary operations
+ */
+#define BINARY_OP(op)	             \
+	auto op2 = AS_NUMBER(pop()); \
+	auto op1 = AS_NUMBER(pop()); \
+	push(NUMBER(op1 op op2));    \
+
+/* Backslash in C++ https://stackoverflow.com/questions/19405196/what-does-a-backslash-in-c-mean
+ * As a line continuation
+ * Since the preprocessor processed a #define until a newline is reached, 
+ * line continuations are most useful in macro definitions. 
+ */
 
 class EvaVM {
     public:
@@ -62,10 +75,16 @@ class EvaVM {
 
 	    // 2. Compile program to Eva bytecode
 
-	    constants.push_back(NUMBER(42));
-	    code = {OP_CONST, 0, OP_HALT};
+	    constants.push_back(NUMBER(10));
+	    constants.push_back(NUMBER(3));
+
+	    code = {OP_CONST, 0, OP_CONST, 1, OP_DIV, OP_HALT};
+
 	    // Set instruction pointer to the begining
 	    ip = &code[0];
+
+	    // Set instruction pointer to the begining
+	    sp = &stack[0];
 	    return eval();
 	}
 
@@ -79,9 +98,32 @@ class EvaVM {
 		    case OP_HALT:
 			return pop();
 
-		    case OP_CONST:
+		    case OP_CONST: {
 			push(GET_CONST());
 			break;
+		   }
+
+		    case OP_ADD: {
+			BINARY_OP(+);
+			break;
+		    }
+
+		    case OP_SUB: {
+			BINARY_OP(-);
+			break;
+		    }
+
+		    case OP_MUL: {
+			BINARY_OP(*);
+			break;
+		    }
+
+		    case OP_DIV: {
+			BINARY_OP(/);
+			break;
+		    }
+
+
 
 		    default:
 			DIE << "Unknown opcode: " << std::hex << opcode;
