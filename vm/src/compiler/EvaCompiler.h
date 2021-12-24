@@ -5,6 +5,9 @@
 #ifndef EvaCompiler_h
 #define EvaCompiler_h
 
+#include <map>
+#include <string>
+
 #include "../bytecode/OpCode.h"
 #include "../vm/EvaValue.h"
 #include "../Logger.h"
@@ -60,6 +63,7 @@ public:
 
     /**
      * Main compile loop
+     * Code generator (iteration)
      */
     void gen(const Exp& exp) {
 	switch(exp.type) {
@@ -83,7 +87,16 @@ public:
 	     * Symbols (variables, operations)
 	     */
 	    case ExpType::SYMBOL:
-		DIE << "Exptype::SYMBOL: unimplemented.";
+		/*
+		 * Boolean
+		 */
+		if (exp.string == "true" || exp.string == "false") {
+		    emit(OP_CONST);
+		    emit(booleanConstIdx(exp.string == "true" ? true : false));
+		} else {
+		    // Variables TODO
+
+		}
 		break;
 
 	    /**
@@ -113,7 +126,15 @@ public:
 			GEN_BINARY_OP(OP_DIV);
 		    }
 
+		    // --------------------------------------------
+		    // Compare operations:
 
+		    else if (compareOps_.count(op) != 0) {
+			gen(exp.list[1]);
+			gen(exp.list[2]);
+			emit(OP_COMPARE);
+			emit(compareOps_[op]);
+		    }
 		}
 		break;
 	}
@@ -121,7 +142,19 @@ public:
 
 private:
 
+    /**
+     * Compiling code object
+     */
     CodeObject* co;
+
+
+
+    /**
+     * Compare ops map
+     */
+    static std::map<std::string, uint8_t> compareOps_;
+
+
     /**
      * Allocates a numeric constant (index).
      */
@@ -130,6 +163,13 @@ private:
 	return co->constants.size() - 1;
     }
 
+    /**
+     * Allocates a numeric constant (index).
+     */
+    size_t booleanConstIdx(bool value) {
+	ALLOC_CONST(IS_BOOLEAN, AS_BOOLEAN, BOOLEAN, value);
+	return co->constants.size() - 1;
+    }
     /**
      * Allocates a string constant (index).
      */
@@ -142,6 +182,10 @@ private:
 	co->code.push_back(code);
     }
 
+};
+
+std::map <std::string, uint8_t> EvaCompiler::compareOps_ = {
+    {"<", 0}, {">", 1}, {"==", 2}, {">=", 3}, {"<=", 4}, {"!=", 5},
 
 };
 

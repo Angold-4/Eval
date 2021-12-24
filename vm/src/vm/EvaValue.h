@@ -14,6 +14,7 @@
  */
 enum class EvaValueType {
     NUMBER,
+    BOOLEAN,
     OBJECT,
 };
 
@@ -51,6 +52,7 @@ struct EvaValue {
     EvaValueType type;
     union {
 	double number;
+	bool boolean;
 	Object* object;
     };
 };
@@ -77,6 +79,7 @@ struct CodeObject : public Object {
 // Constructors
 
 #define NUMBER(value) ((EvaValue){EvaValueType::NUMBER, .number = value})
+#define BOOLEAN(value) ((EvaValue){EvaValueType::BOOLEAN, .boolean = value})
 
 #define ALLOC_STRING(value) \
     ((EvaValue){EvaValueType::OBJECT, .object = (Object*)new StringObject(value)})
@@ -88,6 +91,7 @@ struct CodeObject : public Object {
 // Accessors:
 
 #define AS_NUMBER(evaValue) ((double)(evaValue).number)
+#define AS_BOOLEAN(evaValue) ((bool)(evaValue).boolean)
 #define AS_STRING(evaValue) ((StringObject*)(evaValue).object)
 #define AS_CPPSTRING(evaValue) (AS_STRING(evaValue)->string)
 #define AS_OBJECT(evaValue) ((Object*)(evaValue).object)
@@ -98,6 +102,7 @@ struct CodeObject : public Object {
 // Testers:
  
 #define IS_NUMBER(evaValue) ((evaValue).type == EvaValueType::NUMBER)
+#define IS_BOOLEAN(evaValue) ((evaValue).type == EvaValueType::BOOLEAN)
 #define IS_OBJECT(evaValue) ((evaValue).type == EvaValueType::OBJECT)
 
 #define IS_OBJECT_TYPE(evaValue, objectType) \
@@ -112,6 +117,8 @@ struct CodeObject : public Object {
 std::string evaValueToTypeString(const EvaValue& evaValue) {
     if (IS_NUMBER(evaValue)) {
 	return "NUMBER";
+    } else if (IS_BOOLEAN(evaValue)) {
+	return "BOOLEAN";
     } else if (IS_STRING(evaValue)) {
 	return "STRING";
     } else if (IS_CODE(evaValue)) {
@@ -126,6 +133,8 @@ std::string evaValueToConstantString(const EvaValue& evaValue) {
     std::stringstream ss;
     if (IS_NUMBER(evaValue)) {
 	ss << evaValue.number;
+    } else if (IS_BOOLEAN(evaValue)) {
+	ss << (evaValue.boolean == true ? "true" : "false");
     } else if (IS_STRING(evaValue)) {
 	ss << "" << AS_CPPSTRING(evaValue) << "";
     } else if (IS_CODE(evaValue)) {
@@ -142,7 +151,6 @@ std::string evaValueToConstantString(const EvaValue& evaValue) {
 /**
  * Output stream.
  */
-
 std::ostream &operator<<(std::ostream &os, const EvaValue &evaValue) {
     return os << "EvaValue (" << evaValueToTypeString(evaValue) << "): " << evaValueToConstantString(evaValue);
 }

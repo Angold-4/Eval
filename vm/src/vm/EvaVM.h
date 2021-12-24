@@ -39,6 +39,35 @@ using syntax::EvaParser;
 	auto op1 = AS_NUMBER(pop()); \
 	push(NUMBER(op1 op op2));    \
 
+/**
+ * Generic values comaprison
+ */
+#define COMPARE_VALUES(op, v1, v2)  \
+    do {                            \
+	bool res;                   \
+	switch (op) {               \
+	    case 0:                 \
+		res = v1 < v2;      \
+		break;              \
+	    case 1:                 \
+		res = v1 > v2;      \
+		break;              \
+	    case 2:                 \
+		res = v1 == v2;     \
+		break;              \
+	    case 3:                 \
+		res = v1 >= v2;     \
+		break;              \
+	    case 4:                 \
+		res = v1 <= v2;     \
+		break;              \
+	    case 5:                 \
+		res = v1 != v2;     \
+		break;              \
+	}                           \
+	push(BOOLEAN(res));         \
+    } while (false)                 \
+
 /* Backslash in C++ https://stackoverflow.com/questions/19405196/what-does-a-backslash-in-c-mean
  * As a line continuation
  * Since the preprocessor processed a #define until a newline is reached, 
@@ -143,7 +172,23 @@ class EvaVM {
 			break;
 		    }
 
+		    case OP_COMPARE: {
+			auto op = READ_BYTE();
 
+			auto op2 = pop();
+			auto op1 = pop();
+
+			if (IS_NUMBER(op1) && IS_NUMBER(op2)) {
+			    auto v1 = AS_NUMBER(op1);
+			    auto v2 = AS_NUMBER(op2);
+			    COMPARE_VALUES(op, v1, v2);
+			} else if (IS_STRING(op1) && IS_STRING(op2)) {
+			    std::string v1 = AS_CPPSTRING(op1);
+			    std::string v2 = AS_CPPSTRING(op2);
+			    COMPARE_VALUES(op, v1, v2);
+			}
+			break;
+		    }
 
 		    default:
 			DIE << "Unknown opcode: " << std::hex << opcode;
