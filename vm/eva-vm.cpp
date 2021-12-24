@@ -14,7 +14,7 @@ int main(int argc, char const *argv[]) {
     // R means raw string
     // https://stackoverflow.com/questions/56710024/what-is-a-raw-string
     auto result = vm.exec(R"(
-	(> 3 10)
+	(if (<= 5 10) 1 2)
     )");
 
     log(result);

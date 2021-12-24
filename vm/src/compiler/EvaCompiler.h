@@ -135,6 +135,47 @@ public:
 			emit(OP_COMPARE);
 			emit(compareOps_[op]);
 		    }
+
+		    // --------------------------------------------
+		    // Branch instruction
+
+		    else if (op == "if") {
+			// <test>
+			gen(exp.list[1]);
+			emit(OP_JMP_IF_FALSE);
+
+			// two bytes address
+			emit(0);
+			emit(0);
+			auto elseJmpAddr = getOffset() - 2; // begin write addr
+
+			// if we do not jump, and come to consequent
+			// after exec it, we need jump to the end
+			// <consequent>
+			gen(exp.list[2]); // we don't know how much code it will generate before we exec it
+			emit(OP_JMP); // jump to the end
+
+			// two bytes address
+			emit(0);
+			emit(0);
+
+			auto endAddr = getOffset() - 2;
+
+			auto elseBranchAddr = getOffset();
+			// if false
+			patchJumpAddress(elseJmpAddr, elseBranchAddr);  
+			// write elseBranchAddr to elseJmpAddr
+			// then jump to here
+
+			// Emit <alternate> if we have it
+			if (exp.list.size() == 4) {
+			    // exec it
+			    gen(exp.list[3]);
+			}
+
+			auto endBranchAddr = getOffset(); // end addr
+			patchJumpAddress(endAddr, endBranchAddr);
+		    }
 		}
 		break;
 	}
@@ -153,6 +194,12 @@ private:
      * Compare ops map
      */
     static std::map<std::string, uint8_t> compareOps_;
+
+    /**
+     * Returns current bytecode offset
+     */
+    size_t getOffset() { return co->code.size(); }
+
 
 
     /**
@@ -182,6 +229,21 @@ private:
 	co->code.push_back(code);
     }
 
+    /**
+     * Writes byte at offset
+     */
+    void writeByteAtOffset(size_t offset, uint8_t value) {
+	co->code[offset] = value;
+    }
+
+
+    /**
+     * Patches jump address
+     */
+    void patchJumpAddress(size_t offset, uint16_t value) {
+	writeByteAtOffset(offset, (value >> 8) & 0xff); // high 8 bits
+	writeByteAtOffset(offset+1, value & 0xff);      // low  8 bits
+    }
 };
 
 std::map <std::string, uint8_t> EvaCompiler::compareOps_ = {

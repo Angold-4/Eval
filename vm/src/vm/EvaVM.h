@@ -23,7 +23,18 @@ using syntax::EvaParser;
 /**
  * Gets a constant from the pool
  */
-#define GET_CONST() co->constants[READ_BYTE()]
+#define GET_CONST() (co->constants[READ_BYTE()])
+
+/**
+ * Reads a short word (2 bytes)
+ */
+#define READ_SHORT() (ip += 2, (uint16_t) ((ip[-2] << 8) | ip[-1]))
+
+
+/**
+ * Convertes bytecode index to a pointer
+ */
+#define TO_ADDRESS(index) (&co->code[index])
 
 /**
  * Stack top (stack overflow after exceeding)
@@ -187,6 +198,27 @@ class EvaVM {
 			    std::string v2 = AS_CPPSTRING(op2);
 			    COMPARE_VALUES(op, v1, v2);
 			}
+			break;
+		    }
+
+		    // ---------------------------------------
+		    // Conditional jump:
+
+		    case OP_JMP_IF_FALSE: {
+			auto cond = AS_BOOLEAN(pop()); // answer of test
+			auto address = READ_SHORT();
+
+			if (!cond) {
+			    ip = TO_ADDRESS(address);
+			}
+			break;
+		    }
+
+		    // ---------------------------------------
+		    // Unconditional jump:
+
+		    case OP_JMP: {
+			ip = TO_ADDRESS(READ_SHORT());
 			break;
 		    }
 
