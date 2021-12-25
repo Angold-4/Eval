@@ -12,6 +12,7 @@
 #include "../vm/EvaValue.h"
 #include "../Logger.h"
 #include "../parser/EvaParser.h"
+#include "../disassembler/EvaDisassembler.h"
 
 
 // Allocates new constant in the pool.
@@ -42,7 +43,7 @@
  */
 class EvaCompiler {
 public:
-    EvaCompiler() {}
+    EvaCompiler() : disassembler(std::make_unique<EvaDisassembler>()) {}
 
     /**
      * Main compile API
@@ -181,12 +182,23 @@ public:
 	}
     }
 
+    /**
+     * Disassemble a object
+     */
+    void disassembleBytecode() { disassembler->disassemble(co); }
+
 private:
 
     /**
      * Compiling code object
      */
     CodeObject* co;
+
+
+    /**
+     * Disassembler
+     */
+    std::unique_ptr<EvaDisassembler> disassembler;
 
 
 

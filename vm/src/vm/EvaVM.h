@@ -124,11 +124,15 @@ class EvaVM {
 	    co = compiler->compile(ast);
 
 
+
 	    // Set instruction pointer to the begining
 	    ip = &co->code[0];
 
 	    // Set instruction pointer to the begining
 	    sp = &stack[0];
+
+	    compiler->disassembleBytecode();
+
 	    return eval();
 	}
 
