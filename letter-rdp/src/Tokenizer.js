@@ -14,6 +14,17 @@ const Spec = [
 
     [/^\/\*[\s\S]*?\*\//, null],
 
+    // Symbols, delimiters:
+    [/^;/, ';'],
+    [/^\{/, '{'],
+    [/^\}/, '}'],
+    [/^\(/, '('],
+    [/^\)/, ')'],
+
+    // Math operatiors: +, -
+    [/^[+\-]/, 'ADDITIVE_OPERATOR'],
+    [/^[*\/]/, 'MULTIPLICATIVE_OPERATOR'],
+
     // String
     [/^"[^"]*"/, 'STRING'],
     [/^'[^']*'/, 'STRING'],
