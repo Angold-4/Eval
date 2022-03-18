@@ -8,6 +8,7 @@ const tests = [
     require('./block-test.js'),
     require('./empty-statement-test.js'),
     require('./math-test.js'),
+    require('./assignment-test'),
 ];
 
 const {Parser} = require('../src/Parser');

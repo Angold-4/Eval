@@ -21,6 +21,15 @@ const Spec = [
     [/^\(/, '('],
     [/^\)/, ')'],
 
+    // Identifiers:
+    [/^\w+/, 'IDENTIFIER'],
+
+
+    // Assignment operators: =, *=, +=, -=, /=
+    
+    [/^=/, 'SIMPLE_ASSIGN'],
+    [/^[\*\/\+\-]=/, "COMPLEX_ASSIGN"],
+
     // Math operatiors: +, -
     [/^[+\-]/, 'ADDITIVE_OPERATOR'],
     [/^[*\/]/, 'MULTIPLICATIVE_OPERATOR'],
